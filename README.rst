@@ -41,6 +41,6 @@ Blok-code compileren::
 
     npm run build
     
-Tests runnen
+Tests runnen::
 
     vendor/bin/phpunit
