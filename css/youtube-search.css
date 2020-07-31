@@ -1,0 +1,45 @@
+.youtube-search ul {
+    list-style-type:none !important;
+}
+
+.youtube-search ul li:before {
+    content: '';
+}
+
+.youtube-search ul.youtube-search-results li {
+    padding-left: 0px;
+    padding-bottom: 25px;
+    clear: left;
+}
+
+.youtube-search ul.youtube-search-results li a {
+    text-decoration: none;
+}
+
+.youtube-search ul.youtube-search-results li a img {
+    float: left;
+    height: 90px;
+}
+
+.youtube-search ul.youtube-search-results li a .youtube-search-video-details {
+    font-size: 15px;
+    color: maroon;
+    position: relative;
+    left: 10px;
+    padding-top: 0px;
+    height: 90px;
+}
+
+.youtube-search .youtube-search-paging-container {
+    text-align: center;
+}
+
+.youtube-search ul.youtube-search-paging li {
+    display: inline;
+    margin: 0.5rem 0 0 2rem;
+}
+
+.youtube-search ul.youtube-search-paging li a {
+    color: maroon;
+    text-decoration: none;
+}
