@@ -2,7 +2,7 @@
 youtube-search
 ##############
 
-A wordpress plugin to publish lists of youtube videos
+A wordpress plugin voor het maken van lijsten van youtube videos
 
 ************
 Dependencies
