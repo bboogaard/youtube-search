@@ -1,0 +1,19 @@
+{
+  "name": "youtube-search",
+  "version": "1.0.0",
+  "description": "Search block for Youtube",
+  "main": "index.js",
+  "scripts": {
+    "start": "wp-scripts start",
+    "build": "wp-scripts build"
+  },
+  "author": "Bram Boogaard",
+  "license": "ISC",
+  "devDependencies": {
+    "@wordpress/scripts": "3.4.0",
+    "@wordpress/dom-ready": "2.5.1"
+  },
+  "dependencies": {
+    "@wordpress/dom-ready": "^2.5.1"
+  }
+}
