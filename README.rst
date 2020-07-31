@@ -2,11 +2,11 @@
 youtube-search
 ##############
 
-A wordpress plugin voor het maken van lijsten van youtube videos
+Een wordpress-plugin voor het maken van lijsten van youtube video's
 
-************
-Dependencies
-************
+*********
+Vereisten
+*********
 
  - PHP 7.0
  - MySQL 5.5
@@ -33,9 +33,9 @@ Vanuit plugin-directory::
     npm install    
 
 
-***********
-Development
-***********
+************
+Ontwikkeling
+************
 
 Blok-code compileren::
 
