@@ -135,12 +135,15 @@ class YoutubeSearchHandler {
 
     public function search_json() {
 
-        $result = $this->search($_GET);
-        if ($result) {
+        try {
+            $result = $this->search($_GET);
             $this->wp_json->send_success($result);
         }
-
-        $this->wp_send_json_error();
+        catch (YoutubeClientError $e) {
+            $this->wp_json->send_error(array(
+                'message' => $e->getMessage()
+            ));
+        }
 
     }
 
@@ -148,12 +151,15 @@ class YoutubeSearchHandler {
 
         $params = youtube_search_parse_args($data, array(
             'listPart' => '',
+            'type' => 'video',
             'q' => '',
             'maxResults' => 10,
             'order' => 'relevance',
             'publishedAfter' => null,
             'safeSearch' => 'moderate',
             'videoDefinition' => null,
+            'videoDuration' => 'any',
+            'videoType' => null,
             'pageToken' => ''
         ));
 

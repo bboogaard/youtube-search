@@ -69,10 +69,13 @@ class YoutubeSearchBlockHandler {
             'publishedAfter' => null,
             'safeSearch' => 'moderate',
             'videoDefinition' => null,
+            'videoDuration' => 'any',
+            'videoType' => null,
             'showPublishedAt' => true,
             'showDuration' => false,
             'showDefinition' => false,
-            'showViewCount' => false
+            'showViewCount' => false,
+            'usePaging' => false
         ), true);
 
         $list_part = array();
@@ -98,19 +101,30 @@ class YoutubeSearchBlockHandler {
             'publishedAfter' => $publishedAfter,
             'safeSearch' => $attributes['safeSearch'],
             'videoDefinition' => $attributes['videoDefinition'],
+            'videoDuration' => $attributes['videoDuration'],
+            'videoType' => $attributes['videoType'],
             'pageToken' => isset($_GET['pageToken']) ? $_GET['pageToken'] : ''
         );
 
-        $result = $this->youtube_search->search($data);
+        try {
+            $result = $this->youtube_search->search($data);
+            $error = null;
+        }
+        catch (YoutubeClientError $e) {
+            $result = null;
+            $error = $e->getMessage();
+        }
 
         return $this->template_loader->render(
             'videos.php',
             array(
                 'result' => $result,
+                'error' => $error,
                 'showPublishedAt' => $attributes['showPublishedAt'],
                 'showDuration' => $attributes['showDuration'],
                 'showDefinition' => $attributes['showDefinition'],
                 'showViewCount' => $attributes['showViewCount'],
+                'usePaging' => $attributes['usePaging']
             ),
             false
         );

@@ -96,6 +96,10 @@ class YoutubeResultParser {
 
 }
 
+class YoutubeClientError extends Exception {
+
+}
+
 class YoutubeClient {
 
     private $youtube_service;
@@ -111,7 +115,7 @@ class YoutubeClient {
     public function __call($name, $arguments) {
 
         if (!in_array($name, $this->allowed_methods)) {
-            throw new Exception(sprintf("YoutubeClient has no method %s", $name));
+            throw new YoutubeClientError(sprintf("YoutubeClient has no method %s", $name));
         }
 
         $part = isset($arguments[0]) ? $arguments[0] : 'id';
@@ -126,13 +130,11 @@ class YoutubeClient {
             return $parser->parse_response($response);
         }
         catch (Google_ServiceException $e) {
-            error_log(sprintf("Error calling youtube api: %s", $e->getMessage()));
+            throw new YoutubeClientError(sprintf("Error calling youtube api: %s", $e->getMessage()));
         }
         catch (Google_Exception $e) {
-            error_log(sprintf("Error calling youtube api: %s", $e->getMessage()));
+            throw new YoutubeClientError(sprintf("Error calling youtube api: %s", $e->getMessage()));
         }
-
-        return null;
 
     }
 

@@ -26,15 +26,28 @@ import {
 class YoutubeSearchResult {
 
     constructor(response) {
-        this.response = response;
-        if (this.response) {
+
+        this.response = null;
+        this.error = null;
+        if (response.success) {
+            this.response = response.data;
             this.data = this.response.data;
         }
+        else {
+            this.error = response.data;
+        }
+
     }
 
     isValid() {
 
         return this.response !== null;
+
+    }
+
+    getErrorMessage() {
+
+        return this.error ? this.error.message : '';
 
     }
 
@@ -70,7 +83,6 @@ export class YoutubeSearchController extends Component {
         this.setAttributes = this.setAttributes.bind( this );
 
         this.state = {
-            initialResponse: null,
             response: null,
             queryText: '',
             callStatus: 'idle'
@@ -146,17 +158,11 @@ export class YoutubeSearchController extends Component {
                 publishedAfter,
                 query,
                 safeSearch,
-                videoDefinition
+                videoDefinition,
+                videoDuration,
+                videoType
             }
         } = this.props;
-
-        if (!this.state.response || !this.state.initialResponse) {
-            return __("Bezig met laden", "youtube-search");
-        }
-
-        if (!this.state.response.isValid() || !this.state.initialResponse.isValid()) {
-            return __("Er is een fout opgetreden bij het laden van de showroom data", "youtube-search");
-        }
 
         const inspectorControls = (
             <InspectorControls>
@@ -254,12 +260,69 @@ export class YoutubeSearchController extends Component {
                             { value: 'standard', label: __("Alleen SD", "youtube-search") }
                         ] }
                     />
+                    <SelectControl
+                        label={ __("Lengte", 'youtube-search') }
+                        value={ videoDuration }
+                        onChange={ (value) => {
+                            this.setAttributes({
+                                videoDuration: value
+                            });
+                        } }
+                        options={ [
+                            { value: 'any', label: __("Alle lengtes", "youtube-search") },
+                            { value: 'long', label: __("Langer dan 20 minuten", "youtube-search") },
+                            { value: 'medium', label: __("Tussen 4 en 20 minuten", "youtube-search") },
+                            { value: 'short', label: __("Korter dan 4 minuten", "youtube-search") }
+                        ] }
+                    />
+                    <SelectControl
+                        label={ __("Type video", 'youtube-search') }
+                        value={ videoType }
+                        onChange={ (value) => {
+                            this.setAttributes({
+                                videoType: value
+                            });
+                        } }
+                        options={ [
+                            { value: '', label: __("(geen type gekozen)", "youtube-search") },
+                            { value: 'any', label: __("Alle video's", "youtube-search") },
+                            { value: 'episode', label: __("Afleveringen", "youtube-search") },
+                            { value: 'movie', label: __("Films", "youtube-search") }
+                        ] }
+                    />
                 </PanelBody>
                 {
-                    this.getExtraControls(this.state.initialResponse)
+                    this.getExtraControls()
                 }
             </InspectorControls>
         );
+
+        if (!this.state.response) {
+            return ([
+                __("Bezig met laden", "youtube-search"),
+                inspectorControls
+            ]);
+        }
+
+        if (!this.state.response.isValid()) {
+            let errorMessage = this.state.response.getErrorMessage();
+            return ([
+                <div className="youtube-search error">
+                    {
+                        __("Er is een fout opgetreden bij het laden van de video's", "youtube-search")
+                    }
+                    {
+                        errorMessage &&
+                        <pre>
+                            <code style={ { "white-space": "pre-wrap" } }>
+                                { errorMessage }
+                            </code>
+                        </pre>
+                    }
+                </div>,
+                inspectorControls
+            ]);
+        }
 
         return ([
             this.renderForResponse(this.state.response),
@@ -292,58 +355,8 @@ export class YoutubeSearchController extends Component {
         const safeSearch = this.props.attributes.safeSearch ?
                            this.props.attributes.safeSearch : 'moderate';
 
-        var data = [
-            {
-                name: 'action',
-                value: 'youtube_search'
-            },
-            {
-                name: 'maxResults',
-                value: maxResults
-            },
-            {
-                name: 'q',
-                value: query
-            },
-            {
-                name: 'order',
-                value: order
-            },
-            {
-                name: 'safeSearch',
-                value: safeSearch
-            }
-        ];
-
-        if (publishedAfter) {
-            data.push({
-                name: 'publishedAfter',
-                value: publishedAfter
-            });
-        }
-        if (this.props.attributes.videoDefinition) {
-            data.push({
-                name: 'videoDefinition',
-                value: this.props.attributes.videoDefinition
-            });
-        }
-
-        if (listPart) {
-            data.push({
-                name: 'listPart',
-                value: listPart
-            });
-        }
-
-        jQuery.get(ajaxurl, data).done(
-            (res) => {
-                this.setState({
-                    initialResponse: new YoutubeSearchResult(res.data)
-                })
-            }
-        ).fail( (res) => {
-            console.log('request failed');
-        });
+        const videoDuration = this.props.attributes.videoDuration ?
+                              this.props.attributes.videoDuration : 'any';
 
         var data = [
             {
@@ -365,6 +378,10 @@ export class YoutubeSearchController extends Component {
             {
                 name: 'safeSearch',
                 value: safeSearch
+            },
+            {
+                name: 'videoDuration',
+                value: videoDuration
             }
         ];
 
@@ -378,6 +395,12 @@ export class YoutubeSearchController extends Component {
             data.push({
                 name: 'videoDefinition',
                 value: this.props.attributes.videoDefinition
+            });
+        }
+        if (this.props.attributes.videoType) {
+            data.push({
+                name: 'videoType',
+                value: this.props.attributes.videoType
             });
         }
 
@@ -404,7 +427,7 @@ export class YoutubeSearchController extends Component {
         jQuery.get(ajaxurl, data).done(
             (res) => {
                 this.setState({
-                    response: new YoutubeSearchResult(res.data),
+                    response: new YoutubeSearchResult(res),
                     callStatus: 'pending'
                 })
             }
@@ -412,7 +435,7 @@ export class YoutubeSearchController extends Component {
 
     }
 
-    getExtraControls(initialResponse) {
+    getExtraControls() {
 
         return '';
 

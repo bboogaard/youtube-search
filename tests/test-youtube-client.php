@@ -1,6 +1,7 @@
 <?php
 
 use YoutubeSearch\YoutubeClient;
+use YoutubeSearch\YoutubeClientError;
 use YoutubeSearch\YoutubeResultParser;
 
 /**
@@ -97,12 +98,20 @@ class TestYoutubeClient extends WP_UnitTestCase {
                               ->with('id', array('maxResults' => 10))
                               ->andThrow(new Google_Exception('Oops'));
 
-        $actual = $this->youtube_client->search(
-            'id',
-            array('maxResults' => 10),
-            YoutubeResultParser::class
-        );
-        $this->assertNull($actual);
+        try {
+            $actual = $this->youtube_client->search(
+                'id',
+                array('maxResults' => 10),
+                YoutubeResultParser::class
+            );
+            throw new Exception("Exception not raised");
+        }
+        catch (YoutubeClientError $e) {
+            $this->assertEquals(
+                'Error calling youtube api: Oops',
+                $e->getMessage()
+            );
+        }
 
 	}
 
@@ -119,7 +128,7 @@ class TestYoutubeClient extends WP_UnitTestCase {
             );
             throw new Exception('Exception not raised');
         }
-        catch (Exception $e) {
+        catch (YoutubeClientError $e) {
             $this->assertEquals(
                 'YoutubeClient has no method get',
                 $e->getMessage()

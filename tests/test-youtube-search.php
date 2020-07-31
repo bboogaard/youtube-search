@@ -1,5 +1,6 @@
 <?php
 
+use YoutubeSearch\YoutubeClientError;
 use YoutubeSearch\YoutubeListResultParser;
 use YoutubeSearch\YoutubeSearchHandler;
 use YoutubeSearch\YoutubeSearchResultParser;
@@ -177,10 +178,12 @@ class TestYoutubeSearchHandler extends WP_UnitTestCase {
         );
 
         $params = array(
+            'type' => 'video',
             'q' => 'Lorem',
             'maxResults' => 10,
             'order' => 'relevance',
-            'safeSearch' => 'moderate'
+            'safeSearch' => 'moderate',
+            'videoDuration' => 'any'
         );
 
         $cache_key = sprintf('youtube-search-%s', md5(serialize($params)));
@@ -220,10 +223,12 @@ class TestYoutubeSearchHandler extends WP_UnitTestCase {
 
         $params = array(
             'listPart' => 'id,contentDetails',
+            'type' => 'video',
             'q' => 'Lorem',
             'maxResults' => 10,
             'order' => 'relevance',
-            'safeSearch' => 'moderate'
+            'safeSearch' => 'moderate',
+            'videoDuration' => 'any'
         );
 
         $cache_key = sprintf('youtube-search-%s', md5(serialize($params)));
@@ -301,10 +306,12 @@ class TestYoutubeSearchHandler extends WP_UnitTestCase {
 
         $params = array(
             'listPart' => 'id,contentDetails',
+            'type' => 'video',
             'q' => 'Lorem',
             'maxResults' => 10,
             'order' => 'relevance',
-            'safeSearch' => 'moderate'
+            'safeSearch' => 'moderate',
+            'videoDuration' => 'any'
         );
 
         $cache_key = sprintf('youtube-search-%s', md5(serialize($params)));
@@ -364,38 +371,6 @@ class TestYoutubeSearchHandler extends WP_UnitTestCase {
 
     }
 
-    public function test_search_with_error() {
-
-        $data = array(
-            'q' => 'Lorem'
-        );
-
-        $params = array(
-            'q' => 'Lorem',
-            'maxResults' => 10,
-            'order' => 'relevance',
-            'safeSearch' => 'moderate'
-        );
-
-        $cache_key = sprintf('youtube-search-%s', md5(serialize($params)));
-        $this->wp_transient->shouldReceive('get')->with($cache_key)->andReturn(false);
-
-        $this->youtube_client->shouldReceive('search')
-                             ->with(
-                                 'id,snippet',
-                                 $params,
-                                 YoutubeSearchResultParser::class
-                             )
-                             ->andReturn(null);
-
-        $this->wp_transient->shouldReceive('set')->times(0);
-
-        $this->search_handler->search($data);
-
-        $this->assertTrue(true);
-
-    }
-
     public function test_search_cached() {
 
         $data = array(
@@ -403,10 +378,12 @@ class TestYoutubeSearchHandler extends WP_UnitTestCase {
         );
 
         $params = array(
+            'type' => 'video',
             'q' => 'Lorem',
             'maxResults' => 10,
             'order' => 'relevance',
-            'safeSearch' => 'moderate'
+            'safeSearch' => 'moderate',
+            'videoDuration' => 'any'
         );
 
         $result = (object)array(
@@ -432,6 +409,96 @@ class TestYoutubeSearchHandler extends WP_UnitTestCase {
         $this->wp_transient->shouldReceive('set')->times(0);
 
         $this->search_handler->search($data);
+
+        $this->assertTrue(true);
+
+    }
+
+    public function test_search_json() {
+
+        $_GET = array(
+            'q' => 'Lorem'
+        );
+
+        $params = array(
+            'type' => 'video',
+            'q' => 'Lorem',
+            'maxResults' => 10,
+            'order' => 'relevance',
+            'safeSearch' => 'moderate',
+            'videoDuration' => 'any'
+        );
+
+        $cache_key = sprintf('youtube-search-%s', md5(serialize($params)));
+        $this->wp_transient->shouldReceive('get')->with($cache_key)->andReturn(false);
+
+        $result = (object)array(
+            'data' => array(
+                (object)array(
+                    'title' => 'Lorem',
+                    'youtube_id' => 'asdf'
+                )
+            )
+        );
+
+        $this->youtube_client->shouldReceive('search')
+                             ->with(
+                                 'id,snippet',
+                                 $params,
+                                 YoutubeSearchResultParser::class
+                             )
+                             ->andReturn($result);
+
+        $this->wp_transient->shouldReceive('set')->with($cache_key, $result, DAY_IN_SECONDS);
+        $this->wp_json->shouldReceive('send_success')->with($result);
+
+        $this->search_handler->search_json();
+
+        $this->assertTrue(true);
+
+    }
+
+    public function test_search_json_error() {
+
+        $_GET = array(
+            'q' => 'Lorem'
+        );
+
+        $params = array(
+            'type' => 'video',
+            'q' => 'Lorem',
+            'maxResults' => 10,
+            'order' => 'relevance',
+            'safeSearch' => 'moderate',
+            'videoDuration' => 'any'
+        );
+
+        $cache_key = sprintf('youtube-search-%s', md5(serialize($params)));
+        $this->wp_transient->shouldReceive('get')->with($cache_key)->andReturn(false);
+
+        $result = (object)array(
+            'data' => array(
+                (object)array(
+                    'title' => 'Lorem',
+                    'youtube_id' => 'asdf'
+                )
+            )
+        );
+
+        $this->youtube_client->shouldReceive('search')
+                             ->with(
+                                 'id,snippet',
+                                 $params,
+                                 YoutubeSearchResultParser::class
+                             )
+                             ->andThrow(new YoutubeClientError('Oops'));
+
+        $this->wp_transient->shouldReceive('set')->times(0);
+        $this->wp_json->shouldReceive('send_error')->with(array(
+            'message' => 'Oops'
+        ));
+
+        $this->search_handler->search_json();
 
         $this->assertTrue(true);
 

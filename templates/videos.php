@@ -7,7 +7,7 @@ $detailProps = array(
 );
 
 ?>
-<?php if (!empty($result->data)): ?>
+<?php if ($result && !empty($result->data)): ?>
 <div class="youtube-search">
     <div class="youtube-search-result-grid">
         <ul class="youtube-search-results">
@@ -29,6 +29,7 @@ $detailProps = array(
             </li>
             <?php endforeach; ?>
         </ul>
+        <?php if ($usePaging): ?>
         <div class="youtube-search-paging-container">
             <ul class="youtube-search-paging">
                 <li>
@@ -47,6 +48,11 @@ $detailProps = array(
                 </li>
             </ul>
         </div>
+        <?php endif; ?>
     </div>
+</div>
+<?php else: ?>
+<div className="youtube-search error">
+    <?php echo __("Er is een fout opgetreden bij het laden van de video's", "youtube-search"); ?>
 </div>
 <?php endif; ?>

@@ -1,5 +1,6 @@
 <?php
 
+use YoutubeSearch\YoutubeClientError;
 use YoutubeSearch\TemplateLoader;
 use YoutubeSearch\YoutubeSearchBlockHandler;
 
@@ -45,7 +46,8 @@ class TestYoutubeSearchBlockHandler extends WP_UnitTestCase {
             'showPublishedAt' => true,
             'showDuration' => false,
             'showDefinition' => false,
-            'showViewCount' => false
+            'showViewCount' => false,
+            'usePaging' => false
         );
 
         $params = array(
@@ -56,6 +58,8 @@ class TestYoutubeSearchBlockHandler extends WP_UnitTestCase {
             'publishedAfter' => null,
             'safeSearch' => 'moderate',
             'videoDefinition' => null,
+            'videoDuration' => 'any',
+            'videoType' => null,
             'pageToken' => ''
         );
 
@@ -95,7 +99,8 @@ class TestYoutubeSearchBlockHandler extends WP_UnitTestCase {
             'showPublishedAt' => true,
             'showDuration' => true,
             'showDefinition' => true,
-            'showViewCount' => true
+            'showViewCount' => true,
+            'usePaging' => false
         );
 
         $params = array(
@@ -106,6 +111,8 @@ class TestYoutubeSearchBlockHandler extends WP_UnitTestCase {
             'publishedAfter' => null,
             'safeSearch' => 'moderate',
             'videoDefinition' => null,
+            'videoDuration' => 'any',
+            'videoType' => null,
             'pageToken' => ''
         );
 
@@ -145,7 +152,8 @@ class TestYoutubeSearchBlockHandler extends WP_UnitTestCase {
             'showPublishedAt' => true,
             'showDuration' => false,
             'showDefinition' => false,
-            'showViewCount' => false
+            'showViewCount' => false,
+            'usePaging' => true
         );
 
         $params = array(
@@ -156,6 +164,8 @@ class TestYoutubeSearchBlockHandler extends WP_UnitTestCase {
             'publishedAfter' => null,
             'safeSearch' => 'moderate',
             'videoDefinition' => null,
+            'videoDuration' => 'any',
+            'videoType' => null,
             'pageToken' => ''
         );
 
@@ -179,6 +189,42 @@ class TestYoutubeSearchBlockHandler extends WP_UnitTestCase {
 
         $output = $this->block_handler->render_block($block_attributes, '');
         $this->assertOutputContains('<a href="http://example.org?pageToken=qux">Volgende</a>', $output);
+
+    }
+
+    public function test_render_block_with_error() {
+
+        $block_attributes = array(
+            'maxResults' => 10,
+            'query' => 'Lorem',
+            'order' => 'relevance',
+            'safeSearch' => 'moderate',
+            'showPublishedAt' => true,
+            'showDuration' => false,
+            'showDefinition' => false,
+            'showViewCount' => false,
+            'usePaging' => false
+        );
+
+        $params = array(
+            'listPart' => '',
+            'maxResults' => 10,
+            'q' => 'Lorem',
+            'order' => 'relevance',
+            'publishedAfter' => null,
+            'safeSearch' => 'moderate',
+            'videoDefinition' => null,
+            'videoDuration' => 'any',
+            'videoType' => null,
+            'pageToken' => ''
+        );
+
+        $this->youtube_search->shouldReceive('search')->with($params)->andThrow(
+            new YoutubeClientError('Oops')
+        );
+
+        $output = $this->block_handler->render_block($block_attributes, '');
+        $this->assertOutputContains("Er is een fout opgetreden bij het laden van de video's", $output);
 
     }
 

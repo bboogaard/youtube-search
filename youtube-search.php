@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:     Youtube Search
- * Plugin URI:      https://www.wp-wikkel.nl/
+ * Plugin URI:      https://github.com/bboogaard/youtube-search/
  * Description:     Youtube search block
  * Author:          Bram Boogaard
  * Author URI:      https://www.wp-wikkel.nl/

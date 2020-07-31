@@ -42,14 +42,11 @@ class SearchController extends YoutubeSearchController {
         const {
             className,
             attributes: {
-                maxResults,
-                order,
-                publishedAfter,
-                query,
                 showPublishedAt,
                 showDuration,
                 showDefinition,
-                showViewCount
+                showViewCount,
+                usePaging
             },
             setAttributes
         } = this.props;
@@ -60,8 +57,8 @@ class SearchController extends YoutubeSearchController {
             return __("Geen video's gevonden", "youtube-search");
         }
 
-        const prevPage = response.getPrevPage();
-        const nextPage = response.getNextPage();
+        const prevPage = usePaging ? response.getPrevPage(): null;
+        const nextPage = usePaging ? response.getNextPage(): null;
 
         return (
             <div className="youtube-search">
@@ -97,44 +94,47 @@ class SearchController extends YoutubeSearchController {
                             })
                         }
                     </ul>
-                    <div className="youtube-search-paging-container">
-                        <ul className="youtube-search-paging">
-                            <li>
-                                {
-                                    prevPage &&
-                                    <a href="" onClick={ (event) => {
-                                        event.preventDefault();
-                                        this.saveQuery({
-                                            prevPage: prevPage,
-                                            nextPage: null
-                                        }, jQuery(event.target));
-                                    }}>
-                                        { __("Vorige", "youtube-search") }
-                                    </a>
-                                }
-                                {
-                                    !prevPage && __("Vorige", "youtube-search")
-                                }
-                            </li>
-                            <li>
-                                {
-                                    nextPage &&
-                                    <a href="" onClick={ (event) => {
-                                        event.preventDefault();
-                                        this.saveQuery({
-                                            prevPage: null,
-                                            nextPage: nextPage
-                                        }, jQuery(event.target));
-                                    }}>
-                                        { __("Volgende", "youtube-search") }
-                                    </a>
-                                }
-                                {
-                                    !nextPage && __("Volgende", "youtube-search")
-                                }
-                            </li>
-                        </ul>
-                    </div>
+                    {
+                        usePaging &&
+                        <div className="youtube-search-paging-container">
+                            <ul className="youtube-search-paging">
+                                <li>
+                                    {
+                                        prevPage &&
+                                        <a href="" onClick={ (event) => {
+                                            event.preventDefault();
+                                            this.saveQuery({
+                                                prevPage: prevPage,
+                                                nextPage: null
+                                            }, jQuery(event.target));
+                                        }}>
+                                            { __("Vorige", "youtube-search") }
+                                        </a>
+                                    }
+                                    {
+                                        !prevPage && __("Vorige", "youtube-search")
+                                    }
+                                </li>
+                                <li>
+                                    {
+                                        nextPage &&
+                                        <a href="" onClick={ (event) => {
+                                            event.preventDefault();
+                                            this.saveQuery({
+                                                prevPage: null,
+                                                nextPage: nextPage
+                                            }, jQuery(event.target));
+                                        }}>
+                                            { __("Volgende", "youtube-search") }
+                                        </a>
+                                    }
+                                    {
+                                        !nextPage && __("Volgende", "youtube-search")
+                                    }
+                                </li>
+                            </ul>
+                        </div>
+                    }
                 </div>
             </div>
         );
@@ -157,13 +157,14 @@ class SearchController extends YoutubeSearchController {
 
     }
 
-    getExtraControls(initialResponse) {
+    getExtraControls() {
 
         const {
             showPublishedAt,
             showDuration,
             showDefinition,
-            showViewCount
+            showViewCount,
+            usePaging
         } = this.props.attributes;
 
         return (
@@ -208,6 +209,15 @@ class SearchController extends YoutubeSearchController {
                         });
                     } }
                 />
+                <ToggleControl
+                    label={  __("Gebruik paginering", "youtube-search") }
+                    checked={ usePaging }
+                    onChange={ (value) => {
+                        this.setAttributes({
+                            usePaging: value
+                        });
+                    } }
+                />
             </PanelBody>
         );
 
@@ -238,6 +248,12 @@ registerBlockType('youtube-search/search', {
         videoDefinition: {
             type: 'string'
         },
+        videoDuration: {
+            type: 'string'
+        },
+        videoType: {
+            type: 'string'
+        },
         showPublishedAt: {
             type: 'boolean'
         },
@@ -248,6 +264,9 @@ registerBlockType('youtube-search/search', {
             type: 'boolean'
         },
         showViewCount: {
+            type: 'boolean'
+        },
+        usePaging: {
             type: 'boolean'
         }
     },
