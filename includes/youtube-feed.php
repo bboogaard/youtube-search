@@ -1,0 +1,202 @@
+<?php
+
+namespace YoutubeSearch;
+
+use \DateTime;
+use \DateTimeZone;
+use WP\WPTransient;
+
+class YoutubeFeedSearchResultParser extends YoutubeResultParser {
+
+    public function parse_response($response) {
+
+        $result = array();
+
+        foreach ($response['items'] as $item) {
+            $dt = DateTime::createFromFormat(
+                'Y-m-d\TH:i:s\Z',
+                $item['snippet']['publishedAt'],
+                new DateTimeZone('UTC')
+            );
+
+            $title = $item['snippet']['title'];
+            $description = $item['snippet']['description'];
+            $url = sprintf('https://www.youtube.com/watch?v=%s', $item['id']['videoId']);
+            $image = $item['snippet']['thumbnails']['high']['url'];
+
+            $description = sprintf(
+                '%s<br/><br/>' .
+                '<a href="%s" title="%s" target="_blank">' .
+                '<img src="%s" alt="%s" title="%s" />' .
+                '</a>',
+                $description,
+                $url,
+                $url,
+                $image,
+                esc_html($title),
+                esc_html($title)
+            );
+
+            array_push(
+                $result,
+                (object)array(
+                    'title' => $title,
+                    'description' => $description,
+                    'publishedAt' => $dt,
+                    'youtube_id' => $item['id']['videoId'],
+                    'url' => $url,
+                    'thumbnail' => $item['snippet']['thumbnails']['default']['url']
+                )
+            );
+        }
+
+        return (object)array(
+            'data' => $result
+        );
+
+    }
+
+}
+
+class YoutubeFeedHandler {
+
+    private $feed_generator, $wp_transient, $wpdb, $youtube_search;
+
+    public function __construct(YoutubeSearchHandler $youtube_search,
+                                WPTransient $wp_transient) {
+
+        global $wpdb;
+
+        $this->youtube_search = $youtube_search;
+        $this->wp_transient = $wp_transient;
+
+        $this->feed_generator = new FeedGenerator(
+            'Youtube Search',
+            site_url(null, 'feed/youtube-search'),
+            "Cool youtube video's",
+            null,
+            null,
+            site_url(null, 'feed/youtube-search')
+        );
+        $this->wpdb = $wpdb;
+
+        add_action('init', array($this, 'add_feed'));
+
+    }
+
+    public function add_feed() {
+
+        add_feed('youtube-search', array($this, 'render_feed'));
+
+    }
+
+    public function render_feed() {
+
+        $items = $this->get_feed_items();
+        $checksum = md5(serialize($items));
+        if ($checksum == get_option('youtube-search-feed-checksum', '')) {
+            $feed_content = get_option('youtube-search-feed-content');
+            header('Content-Type: '.feed_content_type('rss-http').'; charset='.
+            get_option('blog_charset'), true);
+            echo $feed_content;
+            return;
+        }
+
+        $dt = new DateTime();
+        $dt->setTimezone(new DateTimeZone('Europe/Amsterdam'));
+
+        $feed_content = $this->feed_generator->generate($dt, $items);
+        update_option('youtube-search-feed-checksum', $checksum);
+        update_option('youtube-search-feed-content', $feed_content);
+        header('Content-Type: '.feed_content_type('rss-http').'; charset='.
+        get_option('blog_charset'), true);
+        echo $feed_content;
+
+    }
+
+    private function get_feed_items() {
+
+        $blocks = $this->get_youtube_search_blocks();
+        $items = array();
+        foreach ($blocks as $block) {
+            $attributes = youtube_search_parse_attributes($block['attrs']);
+            $data = youtube_search_build_query($attributes);
+
+            try {
+                $result = $this->youtube_search->search(
+                    $data, new YoutubeFeedSearchResultParser()
+                );
+                if (!empty($result->data)) {
+                    foreach ($result->data as $video) {
+                        array_push(
+                            $items,
+                            array(
+                                'title' => $video->title,
+                                'link' => $video->url,
+                                'description' => $video->description,
+                                'date' => $video->publishedAt,
+                                'url' => $video->url
+                            )
+                        );
+                    }
+                }
+            }
+            catch (YoutubeClientError $e) {
+                error_log($e->getMessage());
+            }
+        }
+        usort(
+            $items,
+            function($a, $b) {
+                return $a['date'] > $b['date'] ? -1 : 1;
+            }
+        );
+        return $items;
+
+    }
+
+    private function get_youtube_search_blocks() {
+
+        $blocks = $this->wp_transient->get('youtube-search-blocks');
+        if ($blocks) {
+            return $blocks;
+        }
+
+        $posts = $this->wpdb->get_results(
+            $this->wpdb->prepare(
+                "SELECT post_content FROM " . $this->wpdb->posts . " " .
+                "WHERE post_type = 'post' AND post_status = 'publish' AND " .
+                "post_content LIKE %s",
+                '%' . $this->wpdb->esc_like('youtube-search/search') . '%'
+            )
+        );
+        $blocks = array();
+        foreach ($posts as $post) {
+            $post_blocks = parse_blocks($post->post_content);
+            foreach ($post_blocks as $block) {
+                if ($block['blockName'] == 'youtube-search/search') {
+                    array_push(
+                        $blocks,
+                        $block
+                    );
+                }
+            }
+        }
+        $this->wp_transient->set('youtube-search-blocks', $blocks, DAY_IN_SECONDS);
+        return $blocks;
+
+    }
+
+}
+
+class YoutubeFeed {
+
+    public static function register() {
+
+        $youtube_search = YoutubeSearch::create();
+        $wp_transient = new WPTransient();
+        $feed_handler = new YoutubeFeedHandler($youtube_search, $wp_transient);
+
+    }
+
+}
