@@ -13,7 +13,7 @@ use YoutubeSearch\YoutubeResultParser;
 /**
  * Tests for the YoutubeClient class
  */
-class TestYoutubeClient extends WP_UnitTestCase {
+class TestYoutubeClient extends YoutubeSearchTestCase {
 
     function setUp() {
 

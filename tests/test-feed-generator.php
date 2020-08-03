@@ -11,7 +11,7 @@ use YoutubeSearch\FeedGenerator;
 /**
  * Tests for the FeedGenerator class
  */
-class TestFeedGenerator extends WP_UnitTestCase {
+class TestFeedGenerator extends YoutubeSearchTestCase {
 
     public function test_generate() {
 

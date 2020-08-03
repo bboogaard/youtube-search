@@ -5,6 +5,8 @@ namespace YoutubeSearch;
 use \DateTime;
 use \DateTimeZone;
 use WP\WPTransient;
+use YoutubeSearch\Lib\Cache;
+use YoutubeSearch\Lib\Http;
 
 class YoutubeFeedSearchResultParser extends YoutubeResultParser {
 
@@ -60,25 +62,29 @@ class YoutubeFeedSearchResultParser extends YoutubeResultParser {
 
 class YoutubeFeedHandler {
 
-    private $feed_generator, $wp_transient, $wpdb, $youtube_search;
+    private $cache, $feed_generator, $http, $wp_transient, $wpdb, $youtube_search;
 
     public function __construct(YoutubeSearchHandler $youtube_search,
-                                WPTransient $wp_transient) {
+                                WPTransient $wp_transient,
+                                Http $http) {
 
         global $wpdb;
 
         $this->youtube_search = $youtube_search;
         $this->wp_transient = $wp_transient;
+        $this->http = $http;
 
         $this->feed_generator = new FeedGenerator(
             'Youtube Search',
-            site_url(null, 'feed/youtube-search'),
+            site_url('feed/youtube-search'),
             "Cool youtube video's",
             null,
             null,
-            site_url(null, 'feed/youtube-search')
+            site_url('feed/youtube-search')
         );
         $this->wpdb = $wpdb;
+
+        $this->cache = new Cache('youtube-search-');
 
         add_action('init', array($this, 'add_feed'));
 
@@ -94,10 +100,11 @@ class YoutubeFeedHandler {
 
         $items = $this->get_feed_items();
         $checksum = md5(serialize($items));
-        if ($checksum == get_option('youtube-search-feed-checksum', '')) {
-            $feed_content = get_option('youtube-search-feed-content');
-            header('Content-Type: '.feed_content_type('rss-http').'; charset='.
-            get_option('blog_charset'), true);
+        $saved_checksum = $this->cache->get('feed-checksum', '');
+        $feed_content = $this->cache->get('feed-content');
+        if ($checksum == $saved_checksum && $feed_content) {
+            $this->http->send_header('Content-Type: '.feed_content_type('rss-http').'; charset='.
+            get_option('blog_charset'));
             echo $feed_content;
             return;
         }
@@ -106,10 +113,10 @@ class YoutubeFeedHandler {
         $dt->setTimezone(new DateTimeZone('Europe/Amsterdam'));
 
         $feed_content = $this->feed_generator->generate($dt, $items);
-        update_option('youtube-search-feed-checksum', $checksum);
-        update_option('youtube-search-feed-content', $feed_content);
-        header('Content-Type: '.feed_content_type('rss-http').'; charset='.
-        get_option('blog_charset'), true);
+        $this->cache->set('feed-checksum', $checksum);
+        $this->cache->set('feed-content', $feed_content);
+        $this->http->send_header('Content-Type: '.feed_content_type('rss-http').'; charset='.
+        get_option('blog_charset'));
         echo $feed_content;
 
     }
@@ -195,7 +202,10 @@ class YoutubeFeed {
 
         $youtube_search = YoutubeSearch::create();
         $wp_transient = new WPTransient();
-        $feed_handler = new YoutubeFeedHandler($youtube_search, $wp_transient);
+        $http = new Http();
+        $feed_handler = new YoutubeFeedHandler(
+            $youtube_search, $wp_transient, $http
+        );
 
     }
 
