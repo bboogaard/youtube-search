@@ -14,7 +14,7 @@ use YoutubeSearch\YoutubeSearchResultParser;
 /**
  * Tests for the YoutubeSearchResultParser class
  */
-class TestYoutubeSearchResultParser extends WP_UnitTestCase {
+class TestYoutubeSearchResultParser extends YoutubeSearchTestCase {
 
     function setUp() {
 

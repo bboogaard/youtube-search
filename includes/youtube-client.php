@@ -120,8 +120,7 @@ class YoutubeClient {
 
         $part = isset($arguments[0]) ? $arguments[0] : 'id';
         $params = isset($arguments[1]) && is_array($arguments[1]) ? $arguments[1] : array();
-        $parser_class = isset($arguments[2]) && $arguments[2] ? $arguments[2] : YoutubeResultParser::class;
-        $parser = new $parser_class();
+        $parser = isset($arguments[2]) && $arguments[2] ? $arguments[2] : new YoutubeResultParser();
 
         try {
             $response = call_user_func_array(

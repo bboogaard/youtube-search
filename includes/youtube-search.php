@@ -147,7 +147,7 @@ class YoutubeSearchHandler {
 
     }
 
-    public function search($data) {
+    public function search($data, $search_result_parser=null, $list_result_parser=null) {
 
         $params = youtube_search_parse_args($data, array(
             'listPart' => '',
@@ -178,7 +178,8 @@ class YoutubeSearchHandler {
         }
 
         $result = $this->youtube_client->search(
-            'id,snippet', $params, YoutubeSearchResultParser::class
+            'id,snippet', $params,
+            $search_result_parser ? $search_result_parser : new YoutubeSearchResultParser()
         );
         if ($result) {
             if ($list_part) {
@@ -188,13 +189,13 @@ class YoutubeSearchHandler {
                         array(
                             'id' => $video->youtube_id
                         ),
-                        YoutubeListResultParser::class
+                        $list_result_parser ? $list_result_parser : new YoutubeListResultParser()
                     );
                     if (!empty($video_result->data)) {
-                        $video_details = $video_result->data[0];
-                        $video->duration = $video_details->duration;
-                        $video->definition = $video_details->definition;
-                        $video->view_count = $video_details->view_count;
+                        $video_details = (array)$video_result->data[0];
+                        foreach ($video_details as $key => $val) {
+                            $video->$key = $val;
+                        }
                     }
                 }
             }

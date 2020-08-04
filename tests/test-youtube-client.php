@@ -13,7 +13,7 @@ use YoutubeSearch\YoutubeResultParser;
 /**
  * Tests for the YoutubeClient class
  */
-class TestYoutubeClient extends WP_UnitTestCase {
+class TestYoutubeClient extends YoutubeSearchTestCase {
 
     function setUp() {
 
@@ -49,7 +49,7 @@ class TestYoutubeClient extends WP_UnitTestCase {
         $actual = $this->youtube_client->search(
             'id',
             array('maxResults' => 10),
-            YoutubeResultParser::class
+            new YoutubeResultParser()
         );
         $expected = (object)array(
             'data' => array(
@@ -79,7 +79,7 @@ class TestYoutubeClient extends WP_UnitTestCase {
         $actual = $this->youtube_client->list(
             'id',
             array('id' => 'asdf'),
-            YoutubeResultParser::class
+            new YoutubeResultParser()
         );
         $expected = (object)array(
             'data' => array(
@@ -102,7 +102,7 @@ class TestYoutubeClient extends WP_UnitTestCase {
             $actual = $this->youtube_client->search(
                 'id',
                 array('maxResults' => 10),
-                YoutubeResultParser::class
+                new YoutubeResultParser()
             );
             throw new Exception("Exception not raised");
         }
@@ -124,7 +124,7 @@ class TestYoutubeClient extends WP_UnitTestCase {
             $this->youtube_client->get(
                 'id',
                 array('maxResults' => 10),
-                YoutubeResultParser::class
+                new YoutubeResultParser()
             );
             throw new Exception('Exception not raised');
         }
