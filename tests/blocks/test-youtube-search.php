@@ -13,7 +13,7 @@ use YoutubeSearch\YoutubeSearchBlockHandler;
 /**
  * Tests for the YoutubeSearchBlockHandler class
  */
-class TestYoutubeSearchBlockHandler extends WP_UnitTestCase {
+class TestYoutubeSearchBlockHandler extends YoutubeSearchTestCase {
 
     function setUp() {
 
@@ -225,12 +225,6 @@ class TestYoutubeSearchBlockHandler extends WP_UnitTestCase {
 
         $output = $this->block_handler->render_block($block_attributes, '');
         $this->assertOutputContains("Er is een fout opgetreden bij het laden van de video's", $output);
-
-    }
-
-    public function assertOutputContains($value, $output) {
-
-        $this->assertTrue(false !== strpos($output, $value));
 
     }
 
