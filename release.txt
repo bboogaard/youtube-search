@@ -1,3 +1,10 @@
+1.1.1 (2020-08-05)
+------------------
+
+* Use result parser in cache key
+* Add a test for the feed result parser
+
+
 1.1.0 (2020-08-04)
 ------------------
 

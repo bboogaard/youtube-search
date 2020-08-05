@@ -163,7 +163,9 @@ class YoutubeSearchHandler {
             'pageToken' => ''
         ));
 
-        $cache_key = $this->get_cache_key($params);
+        $cache_key = $this->get_cache_key(
+            $params, $search_result_parser, $list_result_parser
+        );
         $result = $this->wp_transient->get($cache_key);
         if ($result) {
             return $result;
@@ -207,8 +209,14 @@ class YoutubeSearchHandler {
 
     }
 
-    private function get_cache_key($params) {
+    private function get_cache_key($params, $search_result_parser, $list_result_parser) {
 
+        if ($search_result_parser) {
+            $params['search_result_parser'] = get_class($search_result_parser);
+        }
+        if ($list_result_parser) {
+            $params['list_result_parser'] = get_class($list_result_parser);
+        }
         return sprintf('youtube-search-%s', md5(serialize($params)));
 
     }
