@@ -179,15 +179,7 @@ class YoutubeFeedHandler {
         );
         $blocks = array();
         foreach ($posts as $post) {
-            $post_blocks = parse_blocks($post->post_content);
-            foreach ($post_blocks as $block) {
-                if ($block['blockName'] == 'youtube-search/search') {
-                    array_push(
-                        $blocks,
-                        $block
-                    );
-                }
-            }
+            $blocks = array_merge($blocks, youtube_search_get_blocks($post));
         }
         $this->wp_transient->set('youtube-search-blocks', $blocks, DAY_IN_SECONDS);
         return $blocks;
