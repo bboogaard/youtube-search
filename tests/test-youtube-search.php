@@ -4,6 +4,7 @@ use YoutubeSearch\YoutubeClientError;
 use YoutubeSearch\YoutubeListResultParser;
 use YoutubeSearch\YoutubeSearchHandler;
 use YoutubeSearch\YoutubeSearchResultParser;
+use YoutubeSearch\YoutubeResultParser;
 
 /**
  * Class TestYoutubeSearchResultParser
@@ -136,6 +137,10 @@ class TestYoutubeListResultParser extends WP_UnitTestCase {
         $this->assertEquals($expected, $actual);
 
     }
+
+}
+
+class MySearchResultParser extends YoutubeResultParser {
 
 }
 
@@ -366,6 +371,51 @@ class TestYoutubeSearchHandler extends WP_UnitTestCase {
         });
 
         $this->search_handler->search($data);
+
+        $this->assertTrue(true);
+
+    }
+
+    public function test_search_with_other_parser() {
+
+        $data = array(
+            'q' => 'Lorem'
+        );
+
+        $params = array(
+            'type' => 'video',
+            'q' => 'Lorem',
+            'maxResults' => 10,
+            'order' => 'relevance',
+            'safeSearch' => 'moderate',
+            'videoDuration' => 'any'
+        );
+        $cache_params = $params;
+        $cache_params['search_result_parser'] = MySearchResultParser::class;
+
+        $cache_key = sprintf('youtube-search-%s', md5(serialize($cache_params)));
+        $this->wp_transient->shouldReceive('get')->with($cache_key)->andReturn(false);
+
+        $result = (object)array(
+            'data' => array(
+                (object)array(
+                    'title' => 'Lorem',
+                    'youtube_id' => 'asdf'
+                )
+            )
+        );
+
+        $this->youtube_client->shouldReceive('search')
+                             ->with(
+                                 'id,snippet',
+                                 $params,
+                                 MySearchResultParser::class
+                             )
+                             ->andReturn($result);
+
+        $this->wp_transient->shouldReceive('set')->with($cache_key, $result, DAY_IN_SECONDS);
+
+        $this->search_handler->search($data, new MySearchResultParser());
 
         $this->assertTrue(true);
 
