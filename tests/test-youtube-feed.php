@@ -3,6 +3,80 @@
 use WP\WPTransient;
 use YoutubeSearch\YoutubeClientError;
 use YoutubeSearch\YoutubeFeedHandler;
+use YoutubeSearch\YoutubeFeedSearchResultParser;
+
+/**
+ * Class TestYoutubeFeedSearchResultParser
+ *
+ * @package Youtube_Search
+ */
+
+/**
+ * Tests for the YoutubeFeedSearchResultParser class
+ */
+class TestYoutubeFeedSearchResultParser extends YoutubeSearchTestCase {
+
+    function setUp() {
+
+        parent::setUp();
+
+        $this->result_parser = new YoutubeFeedSearchResultParser();
+
+    }
+
+    public function test_parse_response() {
+
+        $actual = $this->result_parser->parse_response(array(
+            'items' => array(
+                array(
+                    'snippet' => array(
+                        'title' => 'Lorem',
+                        'description' => 'Lorem ipsum',
+                        'publishedAt' => '2020-07-30T12:00:00Z',
+                        'thumbnails' => array(
+                            'default' => array(
+                                'url' => '/path/to/image.jpg'
+                            ),
+                            'high' => array(
+                                'url' => '/path/to/image.jpg'
+                            )
+                        )
+                    ),
+                    'id' => array(
+                        'videoId' => 'asdf'
+                    )
+                )
+            ),
+            'nextPageToken' => '',
+            'prevPageToken' => ''
+        ));
+
+        $dt = DateTime::createFromFormat(
+            'Y-m-d\TH:i:s\Z',
+            '2020-07-30T12:00:00Z',
+            new DateTimeZone('UTC')
+        );
+        $expected = (object)array(
+            'data' => array(
+                (object)array(
+                    'title' => 'Lorem',
+                    'description' => 'Lorem ipsum<br/><br/>' .
+                    '<a href="https://www.youtube.com/watch?v=asdf" ' .
+                    'title="https://www.youtube.com/watch?v=asdf" target="_blank">' .
+                    '<img src="/path/to/image.jpg" alt="Lorem" title="Lorem" />' .
+                    '</a>',
+                    'publishedAt' => $dt,
+                    'youtube_id' => 'asdf',
+                    'url' => 'https://www.youtube.com/watch?v=asdf',
+                    'thumbnail' => '/path/to/image.jpg'
+                )
+            )
+        );
+        $this->assertEquals($expected, $actual);
+
+    }
+
+}
 
 /**
  * Class TestYoutubeFeedHandler
