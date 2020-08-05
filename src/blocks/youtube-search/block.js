@@ -8,7 +8,6 @@ const {
 
 const {
     PanelBody,
-    SelectControl,
     ToggleControl
 } = wp.components;
 
