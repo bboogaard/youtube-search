@@ -49,32 +49,19 @@ class PostListResultParser extends YoutubeResultParser {
 
         foreach ($response['items'] as $item) {
 
-            $title = $item['snippet']['title'];
             $description = $item['snippet']['description'];
-            $url = sprintf('https://www.youtube.com/watch?v=%s', $item['id']);
             $image = $item['snippet']['thumbnails']['high']['url'];
-            $summary = wp_trim_words($description);
             $embed_html = $this->maybe_get_from_part(
                 $item, 'player', 'embedHtml'
             );
-            if ($embed_html) {
-                $content = sprintf(
-                    '%s<br/><br/>' .
-                    '%s',
-                    $description,
-                    $embed_html
-                );
-            }
-            else {
-                $content = $summary;
-            }
 
             array_push(
                 $result,
                 (object)array(
-                    'content' => $content,
-                    'summary' => $summary,
-                    'image' => $image
+                    'content' => $description,
+                    'summary' => wp_trim_words($description),
+                    'image' => $image,
+                    'embed_html' => $embed_html
                 )
             );
 
@@ -161,6 +148,8 @@ class SearchItemPostsHandler {
                         if (!is_wp_error($new_post_id)) {
                             $this->cache->set($cache_key, $new_post_id);
                             update_post_meta($new_post_id, 'youtube_id', $video->youtube_id);
+                            update_post_meta($new_post_id, 'youtube_url', $video->url);
+                            update_post_meta($new_post_id, 'embed_html', $video->embed_html);
                             $this->add_attachment($new_post_id, $video->youtube_id, $video->image);
                         }
                     }
