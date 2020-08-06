@@ -7,7 +7,7 @@
  * Author URI:      https://www.wp-wikkel.nl/
  * Text Domain:     youtube-search
  * Domain Path:     /languages
- * Version:         1.1.1
+ * Version:         1.2.0
  *
  * @package         Youtube Search
  */
@@ -24,19 +24,21 @@ require('includes/settings.php');
 require('includes/template.loader.php');
 require('includes/lib/cache.php');
 require('includes/lib/http.php');
+require('includes/lib/image-upload.php');
 require('includes/wp/wp-json.php');
 require('includes/wp/wp-transient.php');
 require('includes/youtube-client.php');
 require('includes/youtube-search.php');
 require('includes/youtube-feed.php');
 require('includes/blocks/youtube-search.php');
-
+require('includes/searchitem-posts.php');
 
 function youtube_search_run() {
 
     \YoutubeSearch\YoutubeSearch::register();
     \YoutubeSearch\YoutubeSearchBlock::register();
     \YoutubeSearch\YoutubeFeed::register();
+    \YoutubeSearch\SearchItemPosts::register();
     \YoutubeSearch\Settings::register();
 
 }

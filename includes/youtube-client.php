@@ -10,18 +10,25 @@ use \Google_Service_YouTube;
 
 class YoutubeService {
 
-    private $client;
+    private $active, $client;
 
     public function __construct() {
 
         $api_key = get_option('youtube_search_options', array(
             'api_key' => ''
         ))['api_key'];
-        $this->client = $this->create_client($api_key);
+        $this->active = $api_key != '';
+        if ($this->active) {
+            $this->client = $this->create_client($api_key);
+        }
 
     }
 
     public function search($part, $params) {
+
+        if (!$this->active) {
+            return null;
+        }
 
         $this->throttle();
 
@@ -30,6 +37,10 @@ class YoutubeService {
     }
 
     public function list($part, $params) {
+
+        if (!$this->active) {
+            return null;
+        }
 
         $this->throttle();
 
@@ -126,7 +137,12 @@ class YoutubeClient {
             $response = call_user_func_array(
                 array($this->youtube_service, $name), array($part, $params)
             );
-            return $parser->parse_response($response);
+            if ($response) {
+                return $parser->parse_response($response);
+            }
+            else {
+                return null;
+            }
         }
         catch (Google_ServiceException $e) {
             throw new YoutubeClientError(sprintf("Error calling youtube api: %s", $e->getMessage()));
