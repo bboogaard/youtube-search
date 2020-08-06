@@ -130,7 +130,7 @@ class SearchItemPostsHandler {
                 $result = $this->youtube_search->search(
                     $data, new PostSearchResultParser(), new PostListResultParser()
                 );
-                if (!empty($result->data)) {
+                if ($result && !empty($result->data)) {
                     foreach ($result->data as $video) {
                         $cache_key = sprintf('post-%s', $video->youtube_id);
                         $search_item_post_id = $this->cache->get($cache_key);
