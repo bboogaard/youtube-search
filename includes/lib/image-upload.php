@@ -26,7 +26,7 @@ class ImageUpload {
             return false;
         }
 
-        return file_put_contents($dest_filename, $image_string);
+        return false !== file_put_contents($dest_filename, $image_string);
 
     }
 
