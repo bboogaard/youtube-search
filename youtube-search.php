@@ -7,7 +7,7 @@
  * Author URI:      https://www.wp-wikkel.nl/
  * Text Domain:     youtube-search
  * Domain Path:     /languages
- * Version:         1.1.1
+ * Version:         1.2.0
  *
  * @package         Youtube Search
  */
