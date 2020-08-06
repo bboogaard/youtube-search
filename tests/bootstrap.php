@@ -27,7 +27,9 @@ function _manually_load_plugin() {
 }
 tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
 set_include_path(get_include_path() . PATH_SEPARATOR . 'tests/classes');
+set_include_path(get_include_path() . PATH_SEPARATOR . 'tests');
 
 // Start up the WP testing environment.
 require $_tests_dir . '/includes/bootstrap.php';
 require_once('youtube-search-testcase.php');
+require_once('utils.php');

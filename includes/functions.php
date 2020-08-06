@@ -35,7 +35,10 @@ function youtube_search_parse_attributes($block_attributes) {
         'showDuration' => false,
         'showDefinition' => false,
         'showViewCount' => false,
-        'usePaging' => false
+        'usePaging' => false,
+        'makePosts' => false,
+        'postsCategories' => null,
+        'postsAuthor' => null
     ), true);
 
 }
@@ -97,5 +100,21 @@ function youtube_search_build_nav_link($pageToken) {
     $query = http_build_query($params);
 
     return site_url($path) . '?' . $query;
+
+}
+
+function youtube_search_get_blocks($post) {
+
+    $blocks = array();
+    $post_blocks = parse_blocks($post->post_content);
+    foreach ($post_blocks as $block) {
+        if ($block['blockName'] == 'youtube-search/search') {
+            array_push(
+                $blocks,
+                $block
+            );
+        }
+    }
+    return $blocks;
 
 }

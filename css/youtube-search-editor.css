@@ -1,0 +1,9 @@
+.youtube-search-sidebar .autocomplete .components-form-token-field__label {
+    display: none;
+}
+.youtube-search-sidebar .autocomplete .components-form-token-field__help {
+    display: none;
+}
+.youtube-search-sidebar .categories .components-base-control {
+    margin-bottom: 8px;
+}

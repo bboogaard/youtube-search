@@ -19,6 +19,11 @@ import {
     YoutubeSearchController
 } from './youtube.js';
 
+import {
+    AutoCompleteField,
+    CategoriesField
+} from '../shared/components.js';
+
 class SearchController extends YoutubeSearchController {
 
     startRequest() {
@@ -164,10 +169,31 @@ class SearchController extends YoutubeSearchController {
             showDuration,
             showDefinition,
             showViewCount,
-            usePaging
+            usePaging,
+            makePosts,
+            postsCategories,
+            postsAuthor
         } = this.props.attributes;
 
-        return (
+        const mapUser = (value) => {
+
+            return {
+                label: value.user_nicename,
+                value: value.id
+            }
+
+        }
+
+        const unmapUser = (value) => {
+
+            return {
+                user_nicename: value.label,
+                id: value.value
+            }
+
+        }
+
+        return ([
             <PanelBody
                 title={ __("Weergave", 'youtube-search') }
                 initialOpen={ true }
@@ -218,8 +244,53 @@ class SearchController extends YoutubeSearchController {
                         });
                     } }
                 />
+            </PanelBody>,
+            <PanelBody
+                title={ __("Extra", 'youtube-search') }
+                initialOpen={ false }
+                className='youtube-search-sidebar'
+            >
+                <ToggleControl
+                    label={  __("Maak posts aan voor resultaten", "youtube-search") }
+                    checked={ makePosts }
+                    onChange={ (value) => {
+                        this.setAttributes({
+                            makePosts: value
+                        });
+                    } }
+                />
+                {
+                    makePosts &&
+                    <>
+                        <CategoriesField
+                            label={  __("Categorieën voor posts", "youtube-search") }
+                            value={ postsCategories }
+                            categories={ youtube_search_block_vars.categories }
+                            onChange={ (value) => {
+                                this.setAttributes({
+                                    postsCategories: value
+                                });
+                            } }
+                        />
+                        <AutoCompleteField
+                            label={  __("Auteur voor posts", "youtube-search") }
+                            value={ postsAuthor ? mapUser(postsAuthor) : null }
+                            suggestions={
+                                youtube_search_block_vars.users.map( (user) => {
+                                    return mapUser(user);
+                                })
+                            }
+                            onChange={ (value) => {
+                                this.setAttributes({
+                                    postsAuthor: value ? unmapUser(value) : null
+                                });
+                            } }
+                            multiple={ false }
+                        />
+                    </>
+                }
             </PanelBody>
-        );
+        ]);
 
     }
 
@@ -268,6 +339,15 @@ registerBlockType('youtube-search/search', {
         },
         usePaging: {
             type: 'boolean'
+        },
+        makePosts: {
+            type: 'boolean'
+        },
+        postsCategories: {
+            type: 'array'
+        },
+        postsAuthor: {
+            type: 'object'
         }
     },
     edit: SearchController
