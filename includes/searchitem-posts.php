@@ -5,6 +5,8 @@ namespace YoutubeSearch;
 use \DateTime;
 use \DateTimeZone;
 use YoutubeSearch\Lib\Cache;
+use YoutubeSearch\Lib\ImageUpload;
+use YoutubeSearch\Lib\ImageUploadFactory;
 
 class PostSearchResultParser extends YoutubeResultParser {
 
@@ -51,18 +53,7 @@ class PostListResultParser extends YoutubeResultParser {
             $description = $item['snippet']['description'];
             $url = sprintf('https://www.youtube.com/watch?v=%s', $item['id']);
             $image = $item['snippet']['thumbnails']['high']['url'];
-            $summary = sprintf(
-                '%s<br/><br/>' .
-                '<a href="%s" title="%s" target="_blank">' .
-                '<img src="%s" alt="%s" title="%s" />' .
-                '</a>',
-                $description,
-                $url,
-                $url,
-                $image,
-                esc_html($title),
-                esc_html($title)
-            );
+            $summary = wp_trim_words($description);
             $embed_html = $this->maybe_get_from_part(
                 $item, 'player', 'embedHtml'
             );
@@ -82,7 +73,8 @@ class PostListResultParser extends YoutubeResultParser {
                 $result,
                 (object)array(
                     'content' => $content,
-                    'summary' => $summary
+                    'summary' => $summary,
+                    'image' => $image
                 )
             );
 
@@ -98,11 +90,13 @@ class PostListResultParser extends YoutubeResultParser {
 
 class SearchItemPostsHandler {
 
-    private $cache, $youtube_search;
+    private $cache, $image_upload, $youtube_search;
 
-    public function __construct(YoutubeSearchHandler $youtube_search) {
+    public function __construct(YoutubeSearchHandler $youtube_search,
+                                ImageUpload $image_upload) {
 
         $this->youtube_search = $youtube_search;
+        $this->image_upload = $image_upload;
 
         $this->cache = new Cache('youtube-search-');
 
@@ -167,6 +161,7 @@ class SearchItemPostsHandler {
                         if (!is_wp_error($new_post_id)) {
                             $this->cache->set($cache_key, $new_post_id);
                             update_post_meta($new_post_id, 'youtube_id', $video->youtube_id);
+                            $this->add_attachment($new_post_id, $video->youtube_id, $video->image);
                         }
                     }
                 }
@@ -187,6 +182,49 @@ class SearchItemPostsHandler {
 
     }
 
+    private function add_attachment($postid, $youtube_id, $image) {
+
+        $image = stripslashes($image);
+        $uploads = wp_upload_dir();
+        $image_filename = basename($image);
+        $ext = pathinfo($image_filename, PATHINFO_EXTENSION);
+        $filename = $youtube_id . "." . $ext;
+        $fullpath = path_join($uploads['path'], $filename);
+
+        $wp_filetype = wp_check_filetype($image_filename, null);
+        if (!substr_count($wp_filetype['type'], "image")) {
+            error_log(sprintf("'%s' is not a valid image", $image_filename));
+            return false;
+        }
+
+        if (!$this->image_upload->save($image, $fullpath)) {
+            return false;
+        }
+
+        $attachment = array(
+             'post_mime_type' => $wp_filetype['type'],
+             'post_title' => $youtube_id,
+             'post_content' => '',
+             'post_status' => 'inherit',
+             'guid' => $uploads['url'] . "/" . $filename
+        );
+        $attachment_id = wp_insert_attachment($attachment, $fullpath, $postid);
+        if (!$attachment_id) {
+            error_log("Failed to save attachment");
+        }
+
+        require_once(ABSPATH . "wp-admin" . '/includes/image.php');
+
+        $attachment_data = wp_generate_attachment_metadata(
+            $attachment_id, $fullpath
+        );
+        wp_update_attachment_metadata($attachment_id,  $attachment_data);
+
+        // set as featured image
+        return set_post_thumbnail($postid, $attachment_id);
+
+    }
+
 }
 
 class SearchItemPosts {
@@ -194,7 +232,10 @@ class SearchItemPosts {
     public static function register() {
 
         $youtube_search = YoutubeSearch::create();
-        $posts_handler = new SearchItemPostsHandler($youtube_search);
+        $image_upload = ImageUploadFactory::create();
+        $posts_handler = new SearchItemPostsHandler(
+            $youtube_search, $image_upload
+        );
 
     }
 

@@ -119,12 +119,9 @@ class TestPostListResultParser extends YoutubeSearchTestCase {
         $expected = (object)array(
             'data' => array(
                 (object)array(
-                    'summary' => 'Lorem ipsum<br/><br/>' .
-                                 '<a href="https://www.youtube.com/watch?v=asdf" ' .
-                                 'title="https://www.youtube.com/watch?v=asdf" target="_blank">' .
-                                 '<img src="/path/to/image.jpg" alt="Lorem" title="Lorem" />' .
-                                 '</a>',
-                    'content' => 'Lorem ipsum<br/><br/><iframe></iframe>'
+                    'summary' => 'Lorem ipsum',
+                    'content' => 'Lorem ipsum<br/><br/><iframe></iframe>',
+                    'image' => '/path/to/image.jpg'
                 )
             )
         );
@@ -160,16 +157,9 @@ class TestPostListResultParser extends YoutubeSearchTestCase {
         $expected = (object)array(
             'data' => array(
                 (object)array(
-                    'summary' => 'Lorem ipsum<br/><br/>' .
-                                 '<a href="https://www.youtube.com/watch?v=asdf" ' .
-                                 'title="https://www.youtube.com/watch?v=asdf" target="_blank">' .
-                                 '<img src="/path/to/image.jpg" alt="Lorem" title="Lorem" />' .
-                                 '</a>',
-                    'content' => 'Lorem ipsum<br/><br/>' .
-                                 '<a href="https://www.youtube.com/watch?v=asdf" ' .
-                                 'title="https://www.youtube.com/watch?v=asdf" target="_blank">' .
-                                 '<img src="/path/to/image.jpg" alt="Lorem" title="Lorem" />' .
-                                 '</a>'
+                    'summary' => 'Lorem ipsum',
+                    'content' => 'Lorem ipsum',
+                    'image' => '/path/to/image.jpg'
                 )
             )
         );
@@ -189,9 +179,10 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
         parent::setUp();
 
         $this->youtube_search = Mockery::mock('YoutubeSearch\YoutubeSearchHandler');
+        $this->image_upload = Mockery::mock('YoutubeSearch\Lib\ImageUpload');
 
         $this->feed_handler = new SearchItemPostsHandler(
-            $this->youtube_search
+            $this->youtube_search, $this->image_upload
         );
 
     }
@@ -225,7 +216,8 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
                     'url' => '/path/to/movie',
                     'thumbnail' => '/path/to/thumbnail.jpg',
                     'content' => 'Lorem ipsum dolor sit amet',
-                    'summary' => 'Lorem ipsum'
+                    'summary' => 'Lorem ipsum',
+                    'image' => '/path/to/image.jpg'
                 )
             )
         );
@@ -233,6 +225,8 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
         $this->youtube_search->shouldReceive('search')->andReturn(
             $result
         );
+
+        $this->image_upload->shouldReceive('save')->andReturn(false);
 
         $content = '<!-- wp:youtube-search/search {"query":"Lorem","order":"viewCount","videoDefinition":"high","videoDuration":"long","videoType":"","showDuration":true,"showDefinition":true,"showViewCount":true,"usePaging":false,"makePosts":true} /-->';
 
@@ -292,7 +286,8 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
                     'url' => '/path/to/movie',
                     'thumbnail' => '/path/to/thumbnail.jpg',
                     'content' => 'Lorem ipsum dolor sit amet',
-                    'summary' => 'Lorem ipsum'
+                    'summary' => 'Lorem ipsum',
+                    'image' => '/path/to/image.jpg'
                 )
             )
         );
@@ -300,6 +295,8 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
         $this->youtube_search->shouldReceive('search')->andReturn(
             $result
         );
+
+        $this->image_upload->shouldReceive('save')->andReturn(false);
 
         $content = sprintf('<!-- wp:youtube-search/search {"query":"Lorem","order":"viewCount","videoDefinition":"high","videoDuration":"long","videoType":"","showDuration":true,"showDefinition":true,"showViewCount":true,"usePaging":false,"makePosts":true,"postsCategories":[{"term_id":%d,"name":"Foo"}]} /-->', $term['term_id']);
 
@@ -368,7 +365,8 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
                     'url' => '/path/to/movie',
                     'thumbnail' => '/path/to/thumbnail.jpg',
                     'content' => 'Lorem ipsum dolor sit amet',
-                    'summary' => 'Lorem ipsum'
+                    'summary' => 'Lorem ipsum',
+                    'image' => '/path/to/image.jpg'
                 )
             )
         );
@@ -376,6 +374,8 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
         $this->youtube_search->shouldReceive('search')->andReturn(
             $result
         );
+
+        $this->image_upload->shouldReceive('save')->andReturn(false);
 
         $content = sprintf('<!-- wp:youtube-search/search {"query":"Lorem","order":"viewCount","videoDefinition":"high","videoDuration":"long","videoType":"","showDuration":true,"showDefinition":true,"showViewCount":true,"usePaging":false,"makePosts":true,"postsAuthor":{"id":%d,"user_nicename":"johndoe"}} /-->', $user_id);
 
@@ -416,6 +416,82 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
 
     }
 
+    public function test_maybe_insert_posts_with_image() {
+
+        $post_id = wp_insert_post(array(
+            'post_type' => 'post',
+            'post_title' => "Video's",
+            'post_name' => 'videos',
+            'post_status' => 'publish',
+            'post_content' => 'Lorem'
+        ));
+
+        $result = (object)array(
+            'data' => array(
+                (object)array(
+                    'title' => 'Lorem',
+                    'publishedAt' => new DateTime('2020-07-03'),
+                    'youtube_id' => 'asdf',
+                    'url' => '/path/to/movie',
+                    'thumbnail' => '/path/to/thumbnail.jpg',
+                    'content' => 'Lorem ipsum dolor sit amet',
+                    'summary' => 'Lorem ipsum',
+                    'image' => '/path/to/image.jpg'
+                )
+            )
+        );
+
+        $this->youtube_search->shouldReceive('search')->andReturn(
+            $result
+        );
+
+        $this->image_upload->shouldReceive('save')->andReturn(true);
+
+        $uploads = wp_upload_dir();
+        $fullpath = path_join($uploads['path'], 'image.jpg');
+        create_image(20, 20, $fullpath);
+
+        $content = '<!-- wp:youtube-search/search {"query":"Lorem","order":"viewCount","videoDefinition":"high","videoDuration":"long","videoType":"","showDuration":true,"showDefinition":true,"showViewCount":true,"usePaging":false,"makePosts":true} /-->';
+
+        wp_update_post(array(
+            'ID' => $post_id,
+            'post_content' => $content
+        ));
+
+        $posts = get_posts(array(
+            'name' => 'lorem'
+        ));
+        $this->assertEquals(count($posts), 1);
+        $post = $posts[0];
+
+        $actual = $post->post_title;
+        $expected = 'Lorem';
+        $this->assertEquals($expected, $actual);
+
+        $actual = $post->post_date;
+        $expected = '2020-07-03 00:00:00';
+        $this->assertEquals($expected, $actual);
+
+        $actual = $post->post_content;
+        $expected = 'Lorem ipsum dolor sit amet';
+        $this->assertEquals($expected, $actual);
+
+        $actual = $post->post_excerpt;
+        $expected = 'Lorem ipsum';
+        $this->assertEquals($expected, $actual);
+
+        $actual = get_post_meta($post->ID, 'youtube_id', true);
+        $expected = 'asdf';
+        $this->assertEquals($expected, $actual);
+
+        $thumbnail_id = get_post_thumbnail_id($post);
+        $attachment = wp_get_attachment_image_src($thumbnail_id);
+        $actual = basename($attachment[0]);
+        $expected = 'asdf.jpg';
+        $this->assertEquals($expected, $actual);
+
+    }
+
     public function test_maybe_insert_posts_nothing_to_do() {
 
         $post_id = wp_insert_post(array(
@@ -435,7 +511,8 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
                     'url' => '/path/to/movie',
                     'thumbnail' => '/path/to/thumbnail.jpg',
                     'content' => 'Lorem ipsum dolor sit amet',
-                    'summary' => 'Lorem ipsum'
+                    'summary' => 'Lorem ipsum',
+                    'image' => '/path/to/image.jpg'
                 )
             )
         );
@@ -443,6 +520,8 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
         $this->youtube_search->shouldReceive('search')->andReturn(
             $result
         );
+
+        $this->image_upload->shouldReceive('save')->andReturn(false);
 
         $content = '<!-- wp:youtube-search/search {"query":"Lorem","order":"viewCount","videoDefinition":"high","videoDuration":"long","videoType":"","showDuration":true,"showDefinition":true,"showViewCount":true,"usePaging":false,"makePosts":false} /-->';
 
@@ -477,7 +556,8 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
                     'url' => '/path/to/movie',
                     'thumbnail' => '/path/to/thumbnail.jpg',
                     'content' => 'Lorem ipsum dolor sit amet',
-                    'summary' => 'Lorem ipsum'
+                    'summary' => 'Lorem ipsum',
+                    'image' => '/path/to/image.jpg',
                 )
             )
         );
@@ -485,6 +565,8 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
         $this->youtube_search->shouldReceive('search')->andThrow(
             new YoutubeClientError('Oops')
         );
+
+        $this->image_upload->shouldReceive('save')->times(0);
 
         $content = '<!-- wp:youtube-search/search {"query":"Lorem","order":"viewCount","videoDefinition":"high","videoDuration":"long","videoType":"","showDuration":true,"showDefinition":true,"showViewCount":true,"usePaging":false,"makePosts":true} /-->';
 

@@ -24,6 +24,7 @@ require('includes/settings.php');
 require('includes/template.loader.php');
 require('includes/lib/cache.php');
 require('includes/lib/http.php');
+require('includes/lib/image-upload.php');
 require('includes/wp/wp-json.php');
 require('includes/wp/wp-transient.php');
 require('includes/youtube-client.php');

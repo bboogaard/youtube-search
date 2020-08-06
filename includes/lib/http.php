@@ -10,4 +10,10 @@ class Http {
 
     }
 
+    public function get($url, $args=null) {
+
+        return wp_remote_get($url, $args);
+
+    }
+
 }
