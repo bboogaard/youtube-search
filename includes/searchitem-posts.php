@@ -92,31 +92,73 @@ class PostListResultParser extends YoutubeListResultParser {
 
 class SearchItemPostsHandler {
 
-    private $cache, $image_upload, $youtube_search;
+    private $cache, $image_upload, $insert_post_limit, $wpdb, $youtube_search;
 
     public function __construct(YoutubeSearchHandler $youtube_search,
                                 ImageUpload $image_upload) {
+
+        global $wpdb;
 
         $this->youtube_search = $youtube_search;
         $this->image_upload = $image_upload;
 
         $this->cache = new Cache('youtube-search-');
+        $this->wpdb = $wpdb;
 
-        add_action('save_post', array($this, 'maybe_insert_posts'), 10, 3);
+        $this->insert_post_limit = get_option('youtube_search_options', array(
+            'insert_post_limit' => 10
+        ))['insert_post_limit'];
+
+        add_action('youtube_search_insert_posts', array($this, 'insert_posts'));
+        add_action('init', array($this, 'schedule_events'));
         add_action('before_delete_post', array($this, 'clear_cache'), 10, 1);
 
     }
 
-    public function maybe_insert_posts($post_ID, $post, $update) {
+    public function schedule_events() {
 
-        if ($post->post_type == 'revision') {
-            return;
+        if ( ! wp_get_schedule( 'youtube_search_insert_posts' ) ) {
+            wp_schedule_event( time(), 'hourly', 'youtube_search_insert_posts');
         }
+
+    }
+
+    public function insert_posts() {
+
+        $post_count = $this->wpdb->get_var(
+            $this->wpdb->prepare(
+                "SELECT COUNT(id) FROM " . $this->wpdb->posts . " " .
+                "WHERE post_type = 'post' AND post_status = 'publish' AND " .
+                "post_content LIKE %s",
+                '%' . $this->wpdb->esc_like('youtube-search/search') . '%'
+            )
+        );
+        $offset = $this->cache->get('insert_post_offset', 0);
+        if ($offset >= $post_count) {
+            $offset = 0;
+        }
+
+        $posts = $this->wpdb->get_results(
+            $this->wpdb->prepare(
+                "SELECT id FROM " . $this->wpdb->posts . " " .
+                "WHERE post_type = 'post' AND post_status = 'publish' AND " .
+                "post_content LIKE %s ORDER BY post_date LIMIT %d OFFSET %d",
+                '%' . $this->wpdb->esc_like('youtube-search/search') . '%',
+                $this->insert_post_limit,
+                $offset
+            )
+        );
+        foreach ($posts as $post) {
+            $this->maybe_insert_posts(get_post($post->id));
+        }
+
+        $this->cache->set('insert_post_offset', $offset + $this->insert_post_limit);
+
+    }
+
+    private function maybe_insert_posts($post) {
 
         $blocks = youtube_search_get_blocks($post);
-        if (empty($blocks)) {
-            return;
-        }
 
         foreach ($blocks as $block) {
             $attributes = youtube_search_parse_attributes($block['attrs']);
@@ -125,6 +167,8 @@ class SearchItemPostsHandler {
             }
             $data = youtube_search_build_query($attributes);
             $data['listPart'] = 'id,snippet,player,contentDetails,statistics';
+
+            $search_item_post_ids = array();
 
             try {
                 $result = $this->youtube_search->search(
@@ -135,10 +179,9 @@ class SearchItemPostsHandler {
                         $cache_key = sprintf('post-%s', $video->youtube_id);
                         $search_item_post_id = $this->cache->get($cache_key);
                         if ($search_item_post_id) {
+                            array_push($search_item_post_ids, $search_item_post_id);
                             continue;
                         }
-
-                        remove_action('save_post', array($this, 'maybe_insert_posts'), 10, 3);
 
                         $post_vars = array(
                             'post_type' => 'youtube_searchitem',
@@ -163,11 +206,9 @@ class SearchItemPostsHandler {
 
                         $new_post_id = wp_insert_post($post_vars);
 
-                        add_action('save_post', array($this, 'maybe_insert_posts'), 10, 3);
-
                         if (!is_wp_error($new_post_id)) {
                             $this->cache->set($cache_key, $new_post_id);
-                            update_post_meta($new_post_id, 'youtube_search_post', $post_ID);
+                            update_post_meta($new_post_id, 'youtube_search_post', $post->ID);
                             update_post_meta($new_post_id, 'youtube_id', $video->youtube_id);
                             update_post_meta($new_post_id, 'youtube_url', $video->url);
                             update_post_meta($new_post_id, 'duration', $video->duration);
@@ -175,12 +216,26 @@ class SearchItemPostsHandler {
                             update_post_meta($new_post_id, 'view_count', $video->view_count);
                             update_post_meta($new_post_id, 'embed_html', $video->embed_html);
                             $this->add_attachment($new_post_id, $video->youtube_id, $video->image);
+                            array_push($search_item_post_ids, $new_post_id);
                         }
                     }
                 }
             }
             catch (YoutubeClientError $e) {
                 error_log($e->getMessage());
+            }
+        }
+
+        $search_item_posts = get_posts(array(
+            'post_type' => 'youtube_searchitem',
+            'meta_query' => array(
+                'key' => 'youtube_search_post',
+                'value' => $post->ID
+            )
+        ));
+        foreach ($search_item_posts as $search_item_post) {
+            if (!in_array($search_item_post->ID, $search_item_post_ids)) {
+                wp_delete_post($search_item_post->ID, true);
             }
         }
 
