@@ -109,6 +109,13 @@ class TestPostListResultParser extends YoutubeSearchTestCase {
                     'id' => 'asdf',
                     'player' => array(
                         'embedHtml' => '<iframe></iframe>'
+                    ),
+                    'contentDetails' => array(
+                        'duration' => 'PT1M5S',
+                        'definition' => 'hd'
+                    ),
+                    'statistics' => array(
+                        'viewCount' => 1200
                     )
                 )
             ),
@@ -122,7 +129,10 @@ class TestPostListResultParser extends YoutubeSearchTestCase {
                     'summary' => 'Lorem ipsum',
                     'content' => 'Lorem ipsum',
                     'image' => '/path/to/image.jpg',
-                    'embed_html' => '<iframe></iframe>'
+                    'embed_html' => '<iframe></iframe>',
+                    'duration' => '01:05',
+                    'definition' => 'HD',
+                    'view_count' => '1.200'
                 )
             )
         );
@@ -148,7 +158,14 @@ class TestPostListResultParser extends YoutubeSearchTestCase {
                             )
                         )
                     ),
-                    'id' => 'asdf'
+                    'id' => 'asdf',
+                    'contentDetails' => array(
+                        'duration' => 'PT1M5S',
+                        'definition' => 'hd'
+                    ),
+                    'statistics' => array(
+                        'viewCount' => 1200
+                    )
                 )
             ),
             'nextPageToken' => '',
@@ -161,7 +178,10 @@ class TestPostListResultParser extends YoutubeSearchTestCase {
                     'summary' => 'Lorem ipsum',
                     'content' => 'Lorem ipsum',
                     'image' => '/path/to/image.jpg',
-                    'embed_html' => null
+                    'embed_html' => null,
+                    'duration' => '01:05',
+                    'definition' => 'HD',
+                    'view_count' => '1.200'
                 )
             )
         );
@@ -202,7 +222,6 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
     public function test_maybe_insert_posts() {
 
         $post_id = wp_insert_post(array(
-            'post_type' => 'post',
             'post_title' => "Video's",
             'post_name' => 'videos',
             'post_status' => 'publish',
@@ -220,7 +239,10 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
                     'content' => 'Lorem ipsum dolor sit amet',
                     'summary' => 'Lorem ipsum',
                     'image' => '/path/to/image.jpg',
-                    'embed_html' => '<iframe></iframe>'
+                    'embed_html' => '<iframe></iframe>',
+                    'duration' => '01:05',
+                    'definition' => 'HD',
+                    'view_count' => '1.200'
                 )
             )
         );
@@ -239,6 +261,7 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
         ));
 
         $posts = get_posts(array(
+            'post_type' => 'youtube_searchitem',
             'name' => 'lorem'
         ));
         $this->assertEquals(count($posts), 1);
@@ -272,6 +295,22 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
         $expected = '<iframe></iframe>';
         $this->assertEquals($expected, $actual);
 
+        $actual = get_post_meta($post->ID, 'youtube_search_post', true);
+        $expected = $post_id;
+        $this->assertEquals($expected, $actual);
+
+        $actual = get_post_meta($post->ID, 'duration', true);
+        $expected = '01:05';
+        $this->assertEquals($expected, $actual);
+
+        $actual = get_post_meta($post->ID, 'definition', true);
+        $expected = 'HD';
+        $this->assertEquals($expected, $actual);
+
+        $actual = get_post_meta($post->ID, 'view_count', true);
+        $expected = '1.200';
+        $this->assertEquals($expected, $actual);
+
     }
 
     public function test_maybe_insert_posts_with_categories() {
@@ -281,7 +320,6 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
         );
 
         $post_id = wp_insert_post(array(
-            'post_type' => 'post',
             'post_title' => "Video's",
             'post_name' => 'videos',
             'post_status' => 'publish',
@@ -299,7 +337,10 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
                     'content' => 'Lorem ipsum dolor sit amet',
                     'summary' => 'Lorem ipsum',
                     'image' => '/path/to/image.jpg',
-                    'embed_html' => '<iframe></iframe>'
+                    'embed_html' => '<iframe></iframe>',
+                    'duration' => '01:05',
+                    'definition' => 'HD',
+                    'view_count' => '1.200'
                 )
             )
         );
@@ -318,6 +359,7 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
         ));
 
         $posts = get_posts(array(
+            'post_type' => 'youtube_searchitem',
             'name' => 'lorem'
         ));
         $this->assertEquals(count($posts), 1);
@@ -349,6 +391,22 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
 
         $actual = get_post_meta($post->ID, 'embed_html', true);
         $expected = '<iframe></iframe>';
+        $this->assertEquals($expected, $actual);
+
+        $actual = get_post_meta($post->ID, 'youtube_search_post', true);
+        $expected = $post_id;
+        $this->assertEquals($expected, $actual);
+
+        $actual = get_post_meta($post->ID, 'duration', true);
+        $expected = '01:05';
+        $this->assertEquals($expected, $actual);
+
+        $actual = get_post_meta($post->ID, 'definition', true);
+        $expected = 'HD';
+        $this->assertEquals($expected, $actual);
+
+        $actual = get_post_meta($post->ID, 'view_count', true);
+        $expected = '1.200';
         $this->assertEquals($expected, $actual);
 
         $categories = wp_get_post_categories($post->ID, 'category');
@@ -369,7 +427,6 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
         ));
 
         $post_id = wp_insert_post(array(
-            'post_type' => 'post',
             'post_title' => "Video's",
             'post_name' => 'videos',
             'post_status' => 'publish',
@@ -387,7 +444,10 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
                     'content' => 'Lorem ipsum dolor sit amet',
                     'summary' => 'Lorem ipsum',
                     'image' => '/path/to/image.jpg',
-                    'embed_html' => '<iframe></iframe>'
+                    'embed_html' => '<iframe></iframe>',
+                    'duration' => '01:05',
+                    'definition' => 'HD',
+                    'view_count' => '1.200'
                 )
             )
         );
@@ -406,6 +466,7 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
         ));
 
         $posts = get_posts(array(
+            'post_type' => 'youtube_searchitem',
             'name' => 'lorem'
         ));
         $this->assertEquals(count($posts), 1);
@@ -439,6 +500,22 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
         $expected = '<iframe></iframe>';
         $this->assertEquals($expected, $actual);
 
+        $actual = get_post_meta($post->ID, 'youtube_search_post', true);
+        $expected = $post_id;
+        $this->assertEquals($expected, $actual);
+
+        $actual = get_post_meta($post->ID, 'duration', true);
+        $expected = '01:05';
+        $this->assertEquals($expected, $actual);
+
+        $actual = get_post_meta($post->ID, 'definition', true);
+        $expected = 'HD';
+        $this->assertEquals($expected, $actual);
+
+        $actual = get_post_meta($post->ID, 'view_count', true);
+        $expected = '1.200';
+        $this->assertEquals($expected, $actual);
+
         $actual = $post->post_author;
         $expected = $user_id;
         $this->assertEquals($expected, $actual);
@@ -448,7 +525,6 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
     public function test_maybe_insert_posts_with_image() {
 
         $post_id = wp_insert_post(array(
-            'post_type' => 'post',
             'post_title' => "Video's",
             'post_name' => 'videos',
             'post_status' => 'publish',
@@ -466,7 +542,10 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
                     'content' => 'Lorem ipsum dolor sit amet',
                     'summary' => 'Lorem ipsum',
                     'image' => '/path/to/image.jpg',
-                    'embed_html' => '<iframe></iframe>'
+                    'embed_html' => '<iframe></iframe>',
+                    'duration' => '01:05',
+                    'definition' => 'HD',
+                    'view_count' => '1.200'
                 )
             )
         );
@@ -489,6 +568,7 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
         ));
 
         $posts = get_posts(array(
+            'post_type' => 'youtube_searchitem',
             'name' => 'lorem'
         ));
         $this->assertEquals(count($posts), 1);
@@ -522,6 +602,22 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
         $expected = '<iframe></iframe>';
         $this->assertEquals($expected, $actual);
 
+        $actual = get_post_meta($post->ID, 'youtube_search_post', true);
+        $expected = $post_id;
+        $this->assertEquals($expected, $actual);
+
+        $actual = get_post_meta($post->ID, 'duration', true);
+        $expected = '01:05';
+        $this->assertEquals($expected, $actual);
+
+        $actual = get_post_meta($post->ID, 'definition', true);
+        $expected = 'HD';
+        $this->assertEquals($expected, $actual);
+
+        $actual = get_post_meta($post->ID, 'view_count', true);
+        $expected = '1.200';
+        $this->assertEquals($expected, $actual);
+
         $thumbnail_id = get_post_thumbnail_id($post);
         $attachment = wp_get_attachment_image_src($thumbnail_id);
         $actual = basename($attachment[0]);
@@ -533,7 +629,6 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
     public function test_maybe_insert_posts_nothing_to_do() {
 
         $post_id = wp_insert_post(array(
-            'post_type' => 'post',
             'post_title' => "Video's",
             'post_name' => 'videos',
             'post_status' => 'publish',
@@ -551,7 +646,10 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
                     'content' => 'Lorem ipsum dolor sit amet',
                     'summary' => 'Lorem ipsum',
                     'image' => '/path/to/image.jpg',
-                    'embed_html' => '<iframe></iframe>'
+                    'embed_html' => '<iframe></iframe>',
+                    'duration' => '01:05',
+                    'definition' => 'HD',
+                    'view_count' => '1.200'
                 )
             )
         );
@@ -570,6 +668,7 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
         ));
 
         $posts = get_posts(array(
+            'post_type' => 'youtube_searchitem',
             'name' => 'lorem'
         ));
         $this->assertEquals(count($posts), 0);
@@ -579,7 +678,6 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
     public function test_maybe_insert_posts_with_search_error() {
 
         $post_id = wp_insert_post(array(
-            'post_type' => 'post',
             'post_title' => "Video's",
             'post_name' => 'videos',
             'post_status' => 'publish',
@@ -597,7 +695,10 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
                     'content' => 'Lorem ipsum dolor sit amet',
                     'summary' => 'Lorem ipsum',
                     'image' => '/path/to/image.jpg',
-                    'embed_html' => '<iframe></iframe>'
+                    'embed_html' => '<iframe></iframe>',
+                    'duration' => '01:05',
+                    'definition' => 'HD',
+                    'view_count' => '1.200'
                 )
             )
         );
@@ -616,6 +717,7 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
         ));
 
         $posts = get_posts(array(
+            'post_type' => 'youtube_searchitem',
             'name' => 'lorem'
         ));
         $this->assertEquals(count($posts), 0);
@@ -625,7 +727,7 @@ class TestSearchItemPostsHandler extends YoutubeSearchTestCase {
     public function test_clear_cache() {
 
         $post_id = wp_insert_post(array(
-            'post_type' => 'post',
+            'post_type' => 'youtube_searchitem',
             'post_title' => "Video's",
             'post_name' => 'videos',
             'post_status' => 'publish',

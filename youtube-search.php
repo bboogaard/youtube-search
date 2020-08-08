@@ -31,6 +31,7 @@ require('includes/youtube-client.php');
 require('includes/youtube-search.php');
 require('includes/youtube-feed.php');
 require('includes/blocks/youtube-search.php');
+require('includes/searchitem-posttype.php');
 require('includes/searchitem-posts.php');
 
 function youtube_search_run() {
@@ -38,6 +39,7 @@ function youtube_search_run() {
     \YoutubeSearch\YoutubeSearch::register();
     \YoutubeSearch\YoutubeSearchBlock::register();
     \YoutubeSearch\YoutubeFeed::register();
+    \YoutubeSearch\SearchItemPostType::register();
     \YoutubeSearch\SearchItemPosts::register();
     \YoutubeSearch\Settings::register();
 

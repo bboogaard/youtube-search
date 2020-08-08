@@ -41,7 +41,7 @@ class PostSearchResultParser extends YoutubeResultParser {
 
 }
 
-class PostListResultParser extends YoutubeResultParser {
+class PostListResultParser extends YoutubeListResultParser {
 
     public function parse_response($response) {
 
@@ -58,6 +58,21 @@ class PostListResultParser extends YoutubeResultParser {
             array_push(
                 $result,
                 (object)array(
+                    'duration' => $this->get_duration(
+                        $this->maybe_get_from_part(
+                            $item, 'contentDetails', 'duration'
+                        )
+                    ),
+                    'definition' => $this->get_definition(
+                        $this->maybe_get_from_part(
+                            $item, 'contentDetails', 'definition'
+                        )
+                    ),
+                    'view_count' => $this->get_view_count(
+                        $this->maybe_get_from_part(
+                            $item, 'statistics', 'viewCount'
+                        )
+                    ),
                     'content' => $description,
                     'summary' => wp_trim_words($description),
                     'image' => $image,
@@ -94,6 +109,10 @@ class SearchItemPostsHandler {
 
     public function maybe_insert_posts($post_ID, $post, $update) {
 
+        if ($post->post_type == 'revision') {
+            return;
+        }
+
         $blocks = youtube_search_get_blocks($post);
         if (empty($blocks)) {
             return;
@@ -105,7 +124,7 @@ class SearchItemPostsHandler {
                 continue;
             }
             $data = youtube_search_build_query($attributes);
-            $data['listPart'] = 'id,snippet,player';
+            $data['listPart'] = 'id,snippet,player,contentDetails,statistics';
 
             try {
                 $result = $this->youtube_search->search(
@@ -122,6 +141,7 @@ class SearchItemPostsHandler {
                         remove_action('save_post', array($this, 'maybe_insert_posts'), 10, 3);
 
                         $post_vars = array(
+                            'post_type' => 'youtube_searchitem',
                             'post_title' => $video->title,
                             'post_name' => sanitize_title($video->title),
                             'post_status' => 'publish',
@@ -147,8 +167,12 @@ class SearchItemPostsHandler {
 
                         if (!is_wp_error($new_post_id)) {
                             $this->cache->set($cache_key, $new_post_id);
+                            update_post_meta($new_post_id, 'youtube_search_post', $post_ID);
                             update_post_meta($new_post_id, 'youtube_id', $video->youtube_id);
                             update_post_meta($new_post_id, 'youtube_url', $video->url);
+                            update_post_meta($new_post_id, 'duration', $video->duration);
+                            update_post_meta($new_post_id, 'definition', $video->definition);
+                            update_post_meta($new_post_id, 'view_count', $video->view_count);
                             update_post_meta($new_post_id, 'embed_html', $video->embed_html);
                             $this->add_attachment($new_post_id, $video->youtube_id, $video->image);
                         }
