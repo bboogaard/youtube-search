@@ -72,6 +72,33 @@ class TestShortcodeHandler extends YoutubeSearchTestCase {
 
     }
 
+    public function test_render_wrong_posttype() {
+
+        $post_id = wp_insert_post(array(
+            'post_type' => 'post',
+            'post_title' => 'Video',
+            'post_name' => 'video',
+            'post_status' => 'publish'
+        ));
+        update_post_meta($post_id, 'embed_html', '<iframe></iframe>');
+        update_post_meta($post_id, 'duration', '01:05');
+        update_post_meta($post_id, 'definition', 'HD');
+        update_post_meta($post_id, 'view_count', '1.200');
+
+        $shortcode_handler = new ShortcodeHandler(
+            $this->template_loader,
+            array(
+                'post_id' => $post_id,
+                'post_thumbnail_size' => 'post-thumbnail',
+                'post_thumbnail_class' => ''
+            )
+        );
+
+        $output = $shortcode_handler->render();
+        $this->assertEquals('', $output);
+        
+    }
+
     function add_thumbnail($post_id) {
 
         $uploads = wp_upload_dir();
