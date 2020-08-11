@@ -115,7 +115,7 @@ class YoutubeSearchBlockHandler {
             'hide_empty' => false
         ));
         array_unshift($categories, (object)array(
-            'id' => '0',
+            'term_id' => '0',
             'name' => '(geen categorie)'
         ));
 
