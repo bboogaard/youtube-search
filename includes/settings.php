@@ -28,7 +28,8 @@ class SettingsPage {
     public function admin_page() {
 
         $this->options = get_option('youtube_search_options', array(
-            'api_key' => ''
+            'api_key' => '',
+            'insert_post_limit' => 10
         ));
 
         ?>
@@ -71,6 +72,21 @@ class SettingsPage {
             'youtube_search_settings_auth'
         );
 
+        add_settings_section(
+            'youtube_search_settings_posts',
+            __('Posts', 'youtube-search'),
+            array($this, 'print_section_info_posts'),
+            'youtube_search_settings'
+        );
+
+        add_settings_field(
+            'insert_post_limit',
+            __('Aantal posts per cron-run', 'youtube-search'),
+            array($this, 'insert_post_limit_callback'),
+            'youtube_search_settings',
+            'youtube_search_settings_posts'
+        );
+
     }
 
     public function sanitize($input) {
@@ -79,6 +95,9 @@ class SettingsPage {
 
         if(isset( $input['api_key']))
             $new_input['api_key'] = sanitize_text_field($input['api_key']);
+
+        if(isset( $input['insert_post_limit']))
+            $new_input['insert_post_limit'] = intval($input['insert_post_limit']);
 
         return $new_input;
     }
@@ -94,6 +113,21 @@ class SettingsPage {
         printf(
             '<input type="text" class="regular-text" id="api_key" name="youtube_search_options[api_key]" value="%s" />',
             isset($this->options['api_key']) ? esc_attr($this->options['api_key']) : ''
+        );
+
+    }
+
+    public function print_section_info_posts() {
+
+        print __('Instellingen aanmaken posts', 'youtube-search');
+
+    }
+
+    public function insert_post_limit_callback() {
+
+        printf(
+            '<input type="number" min="5" max="20" class="small-text" id="insert_post_limit" name="youtube_search_options[insert_post_limit]" value="%d" />',
+            isset($this->options['insert_post_limit']) ? $this->options['insert_post_limit'] : 10
         );
 
     }

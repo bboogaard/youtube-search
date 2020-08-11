@@ -77,7 +77,7 @@ class YoutubeListResultParser extends YoutubeResultParser {
 
     }
 
-    private function get_duration($value) {
+    protected function get_duration($value) {
 
         if (!$value) {
             return null;
@@ -95,7 +95,7 @@ class YoutubeListResultParser extends YoutubeResultParser {
 
     }
 
-    private function get_definition($value) {
+    protected function get_definition($value) {
 
         if (!$value) {
             return null;
@@ -105,7 +105,7 @@ class YoutubeListResultParser extends YoutubeResultParser {
 
     }
 
-    private function get_view_count($value) {
+    protected function get_view_count($value) {
 
         if (!$value) {
             return null;
